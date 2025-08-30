@@ -1,0 +1,14 @@
+# Ignorar dependências
+node_modules/
+
+# Ignorar sessões locais do WhatsApp
+sessions/
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Ignorar variáveis de ambiente
+.env
+
+# Ignorar logs
+npm-debug.log
+yarn-error.log
