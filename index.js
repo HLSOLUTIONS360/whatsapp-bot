@@ -6,6 +6,8 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+let lastQr; // guarda o último QR gerado
+
 // 🔹 Inicializa o cliente WhatsApp
 const client = new Client({
   authStrategy: new LocalAuth(),
@@ -24,13 +26,11 @@ const client = new Client({
   }
 });
 
-// 🔹 Mostra o QR Code como link (mais fácil no Railway)
+// 🔹 Gera QR Code e salva
 client.on("qr", async qr => {
   try {
-    const qrImageUrl = await qrcode.toDataURL(qr);
-    console.log("📲 Escaneie este QR Code para conectar no WhatsApp:");
-    console.log("Abra este link no navegador para ver o QR Code:");
-    console.log(qrImageUrl);
+    lastQr = await qrcode.toDataURL(qr); // transforma QR em imagem base64
+    console.log("📲 QR Code atualizado! Acesse /qr no navegador para escanear.");
   } catch (err) {
     console.error("Erro ao gerar QR Code:", err);
   }
@@ -58,16 +58,16 @@ client.on("message", async msg => {
     return;
   }
 
-  // Lista padrão de opções
+  // Lista de opções
   const resposta = `
 📌 *Bem-vindo ao Chatbot da HL Solutions 360!*
 
 Escolha uma opção:
-1️⃣ Criar site para minha empresa
-2️⃣ Sistemas completos (cadastro, notas fiscais etc.)
-3️⃣ Cursos de Informática e Programação
-4️⃣ Segurança Cibernética para empresas
-5️⃣ Falar com um atendente humano
+1️⃣ Criar site para minha empresa  
+2️⃣ Sistemas completos (cadastro, notas fiscais etc.)  
+3️⃣ Cursos de Informática e Programação  
+4️⃣ Segurança Cibernética para empresas  
+5️⃣ Falar com um atendente humano  
 
 Digite o número da opção desejada.
   `;
@@ -78,11 +78,28 @@ Digite o número da opção desejada.
 // 🔹 Inicia o cliente
 client.initialize();
 
-// 🔹 Servidor Express (mantém Railway ativo)
+// 🔹 Rota principal
 app.get("/", (req, res) => {
   res.send("🤖 WhatsApp Bot HL Solutions 360 rodando na nuvem!");
 });
 
+// 🔹 Rota para exibir o QR Code
+app.get("/qr", (req, res) => {
+  if (!lastQr) {
+    return res.send("❌ Nenhum QR Code gerado ainda, aguarde alguns segundos...");
+  }
+  const html = `
+    <html>
+      <body style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;">
+        <h2>📲 Escaneie o QR Code abaixo:</h2>
+        <img src="${lastQr}" />
+      </body>
+    </html>
+  `;
+  res.send(html);
+});
+
+// 🔹 Servidor Express
 app.listen(PORT, () => {
   console.log(`🌐 Servidor online na porta ${PORT}`);
 });
