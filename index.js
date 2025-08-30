@@ -100,6 +100,6 @@ app.get("/qr", (req, res) => {
 });
 
 // 🔹 Servidor Express
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`🌐 Servidor online na porta ${PORT}`);
 });
