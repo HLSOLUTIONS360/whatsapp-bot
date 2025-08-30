@@ -1,6 +1,6 @@
 const { Client, LocalAuth } = require("whatsapp-web.js");
-const qrcode = require("qrcode-terminal");
 const express = require("express");
+const qrcode = require("qrcode");
 require("dotenv").config();
 
 const app = express();
@@ -8,14 +8,32 @@ const PORT = process.env.PORT || 3000;
 
 // 🔹 Inicializa o cliente WhatsApp
 const client = new Client({
-  authStrategy: new LocalAuth(), // guarda a sessão
-  puppeteer: { headless: true }
+  authStrategy: new LocalAuth(),
+  puppeteer: {
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-accelerated-2d-canvas",
+      "--no-first-run",
+      "--no-zygote",
+      "--single-process",
+      "--disable-gpu"
+    ]
+  }
 });
 
-// 🔹 Mostra o QR Code no terminal
-client.on("qr", qr => {
-  console.log("📲 Escaneie este QR Code para conectar no WhatsApp:");
-  qrcode.generate(qr, { small: true });
+// 🔹 Mostra o QR Code como link (mais fácil no Railway)
+client.on("qr", async qr => {
+  try {
+    const qrImageUrl = await qrcode.toDataURL(qr);
+    console.log("📲 Escaneie este QR Code para conectar no WhatsApp:");
+    console.log("Abra este link no navegador para ver o QR Code:");
+    console.log(qrImageUrl);
+  } catch (err) {
+    console.error("Erro ao gerar QR Code:", err);
+  }
 });
 
 // 🔹 Quando conectar com sucesso
@@ -27,7 +45,6 @@ client.on("ready", () => {
 client.on("message", async msg => {
   const message = msg.body.toLowerCase();
 
-  // Saudações
   if (message.includes("bom dia")) {
     await msg.reply("☀️ Bom dia! Como posso te ajudar hoje?");
     return;
@@ -61,9 +78,9 @@ Digite o número da opção desejada.
 // 🔹 Inicia o cliente
 client.initialize();
 
-// 🔹 Servidor Express só para manter Railway ativo
+// 🔹 Servidor Express (mantém Railway ativo)
 app.get("/", (req, res) => {
-  res.send("🤖 WhatsApp Bot HL Solutions 360 rodando!");
+  res.send("🤖 WhatsApp Bot HL Solutions 360 rodando na nuvem!");
 });
 
 app.listen(PORT, () => {
