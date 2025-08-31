@@ -6,7 +6,7 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Variável para armazenar o último QR
+// Variável para armazenar o último QR Code
 let lastQr;
 
 // Inicia o cliente do WhatsApp
@@ -26,84 +26,91 @@ client.on('ready', () => {
     console.log('🤖 Bot HL Solutions 360 está ONLINE!');
 });
 
-// Carregar imagens
-const logo = MessageMedia.fromFilePath(path.join(__dirname, 'logo.png'));
-const mascote = MessageMedia.fromFilePath(path.join(__dirname, 'mascote.png'));
-
-// Evento de mensagem
+// Mensagem inicial com imagens
 client.on('message', async msg => {
-    if (msg.body && msg.body.length > 0) {
-        // Envia logo e mascote na primeira interação
-        await msg.reply(logo);
-        await msg.reply("🤖 Bem-vindo à empresa *HL Solutions 360*! \nSou a assistente virtual da HL Solutions 360 e estou aqui para ajudar você.");
-        await msg.reply(mascote);
+    const texto = msg.body.toLowerCase();
 
-        // Exibe menu
-        const menu = `
-Escolha uma opção:
+    // Primeira interação
+    if (texto === 'oi' || texto === 'olá' || texto === 'bom dia' || texto === 'boa tarde' || texto === 'boa noite') {
+        try {
+            // Enviar logo
+            const logo = MessageMedia.fromFilePath(path.join(__dirname, 'logo.png'));
+            await client.sendMessage(msg.from, logo);
 
-1️⃣ Criar site para minha empresa
-2️⃣ Sistemas completos (cadastro, notas fiscais, etc.)
-3️⃣ Cursos de Informática e Programação
-4️⃣ Segurança Cibernética para empresas
-5️⃣ Falar com um atendente humano
-6️⃣ Contratar nosso serviço de Chatbot 🤖
+            // Enviar mascote
+            const mascote = MessageMedia.fromFilePath(path.join(__dirname, 'mascote.png'));
+            await client.sendMessage(msg.from, mascote);
 
-Digite o número da opção desejada.
-        `;
-        await msg.reply(menu);
+            // Mensagem de boas-vindas
+            await client.sendMessage(
+                msg.from,
+                `👋 Bem-vindo à empresa *HL Solutions 360*!  
+Sou o *assistente virtual* e estou aqui para ajudar você.  
+Escolha uma opção abaixo digitando o número correspondente:  
+
+1️⃣ Criar site para minha empresa  
+2️⃣ Sistemas completos (cadastro, notas fiscais etc.)  
+3️⃣ Cursos de Informática e Programação  
+4️⃣ Segurança Cibernética para empresas  
+5️⃣ Falar com um atendente humano  
+6️⃣ Contratar o serviço de Chatbot 🤖`
+            );
+        } catch (err) {
+            console.error('Erro ao enviar imagens:', err);
+        }
     }
 
-    // Tratamento de opções
-    switch (msg.body) {
-        case "1":
-            await msg.reply("🌐 Você escolheu *Criar site para minha empresa*. Nossa equipe irá ajudar você a ter presença digital com um site profissional.");
-            break;
-        case "2":
-            await msg.reply("📊 Você escolheu *Sistemas completos*. Trabalhamos com soluções sob medida para cadastro, emissão de notas fiscais e muito mais.");
-            break;
-        case "3":
-            await msg.reply("💻 Você escolheu *Cursos de Informática e Programação*. Temos formações para iniciantes e avançados.");
-            break;
-        case "4":
-            await msg.reply("🔐 Você escolheu *Segurança Cibernética*. Oferecemos soluções de proteção para empresas contra ameaças digitais.");
-            break;
-        case "5":
-            await msg.reply("📞 Você escolheu *Falar com um atendente humano*. Em breve alguém da nossa equipe entrará em contato.");
-            break;
-        case "6":
-            await msg.reply("🤖 Você escolheu *Contratar nosso serviço de Chatbot*. Nossa equipe vai te mostrar como automatizar seu atendimento de forma profissional.");
-            break;
-        default:
-            break;
+    // Respostas de acordo com a opção
+    if (texto === '1') {
+        await client.sendMessage(msg.from, "🌐 Você escolheu *Criar site para sua empresa*! Nossa equipe entrará em contato para entender sua necessidade e apresentar a melhor proposta.");
+    }
+
+    if (texto === '2') {
+        await client.sendMessage(msg.from, "💼 Você escolheu *Sistemas completos*! Oferecemos soluções sob medida para cadastro, emissão de notas fiscais e muito mais.");
+    }
+
+    if (texto === '3') {
+        await client.sendMessage(msg.from, "📚 Você escolheu *Cursos de Informática e Programação*! Temos treinamentos práticos para iniciantes e avançados.");
+    }
+
+    if (texto === '4') {
+        await client.sendMessage(msg.from, "🛡️ Você escolheu *Segurança Cibernética*! Nossos especialistas podem proteger sua empresa contra ataques virtuais.");
+    }
+
+    if (texto === '5') {
+        await client.sendMessage(msg.from, "☎️ Você escolheu falar com um *atendente humano*. Aguarde um momento, em breve alguém da nossa equipe entrará em contato.");
+    }
+
+    if (texto === '6') {
+        await client.sendMessage(msg.from, "🤖 Você escolheu *Contratar nosso serviço de Chatbot*! Nossa equipe comercial entrará em contato para apresentar o pacote ideal para você.");
     }
 });
 
-// Rotas Express
+// Inicializa o cliente
+client.initialize();
+
+// 🚀 Rotas do servidor Express
 app.get("/", (req, res) => {
     res.send("🤖 WhatsApp Bot HL Solutions 360 rodando na nuvem!");
 });
 
-// Rota para exibir QR Code
 app.get("/qr", (req, res) => {
     if (!lastQr) {
         return res.send("❌ Nenhum QR Code gerado ainda, aguarde alguns segundos...");
     }
+
     const html = `
     <html>
-        <body style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column">
-            <h2>📲 Escaneie o QR Code abaixo:</h2>
-            <img src="https://api.qrserver.com/v1/create-qr-code/?data=${lastQr}&size=300x300" />
-        </body>
+      <body style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;">
+        <h2>📲 Escaneie o QR Code abaixo para conectar no WhatsApp:</h2>
+        <img src="${lastQr}" />
+      </body>
     </html>
     `;
     res.send(html);
 });
 
-// Servidor Express
-app.listen(PORT, () => {
+// Inicia servidor Express no Railway
+app.listen(PORT, "0.0.0.0", () => {
     console.log(`🌍 Servidor online na porta ${PORT}`);
 });
-
-// Inicia o cliente WhatsApp
-client.initialize();
