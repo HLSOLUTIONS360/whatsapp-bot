@@ -1,105 +1,109 @@
-const { Client, LocalAuth } = require("whatsapp-web.js");
-const express = require("express");
-const qrcode = require("qrcode");
-require("dotenv").config();
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
+const qrcode = require('qrcode-terminal');
+const express = require('express');
+const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
-let lastQr; // guarda o último QR gerado
+// Variável para armazenar o último QR
+let lastQr;
 
-// 🔹 Inicializa o cliente WhatsApp
+// Inicia o cliente do WhatsApp
 const client = new Client({
-  authStrategy: new LocalAuth(),
-  puppeteer: {
-    headless: true,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-accelerated-2d-canvas",
-      "--no-first-run",
-      "--no-zygote",
-      "--single-process",
-      "--disable-gpu"
-    ]
-  }
+    authStrategy: new LocalAuth(),
+    puppeteer: { args: ['--no-sandbox', '--disable-setuid-sandbox'] }
 });
 
-// 🔹 Gera QR Code e salva
-client.on("qr", async qr => {
-  try {
-    lastQr = await qrcode.toDataURL(qr); // transforma QR em imagem base64
-    console.log("📲 QR Code atualizado! Acesse /qr no navegador para escanear.");
-  } catch (err) {
-    console.error("Erro ao gerar QR Code:", err);
-  }
+// Gera o QR Code no terminal e guarda
+client.on('qr', qr => {
+    lastQr = qr;
+    qrcode.generate(qr, { small: true });
 });
 
-// 🔹 Quando conectar com sucesso
-client.on("ready", () => {
-  console.log("✅ WhatsApp Bot conectado com sucesso!");
+// Confirmação de login
+client.on('ready', () => {
+    console.log('🤖 Bot HL Solutions 360 está ONLINE!');
 });
 
-// 🔹 Responde mensagens recebidas
-client.on("message", async msg => {
-  const message = msg.body.toLowerCase();
+// Carregar imagens
+const logo = MessageMedia.fromFilePath(path.join(__dirname, 'logo.png'));
+const mascote = MessageMedia.fromFilePath(path.join(__dirname, 'mascote.png'));
 
-  if (message.includes("bom dia")) {
-    await msg.reply("☀️ Bom dia! Como posso te ajudar hoje?");
-    return;
-  }
-  if (message.includes("boa tarde")) {
-    await msg.reply("🌤️ Boa tarde! Espero que seu dia esteja ótimo!");
-    return;
-  }
-  if (message.includes("boa noite")) {
-    await msg.reply("🌙 Boa noite! Precisa de alguma ajuda?");
-    return;
-  }
+// Evento de mensagem
+client.on('message', async msg => {
+    if (msg.body && msg.body.length > 0) {
+        // Envia logo e mascote na primeira interação
+        await msg.reply(logo);
+        await msg.reply("🤖 Bem-vindo à empresa *HL Solutions 360*! \nSou a assistente virtual da HL Solutions 360 e estou aqui para ajudar você.");
+        await msg.reply(mascote);
 
-  // Lista de opções
-  const resposta = `
-📌 *Bem-vindo ao Chatbot da HL Solutions 360!*
-
+        // Exibe menu
+        const menu = `
 Escolha uma opção:
-1️⃣ Criar site para minha empresa  
-2️⃣ Sistemas completos (cadastro, notas fiscais etc.)  
-3️⃣ Cursos de Informática e Programação  
-4️⃣ Segurança Cibernética para empresas  
-5️⃣ Falar com um atendente humano  
+
+1️⃣ Criar site para minha empresa
+2️⃣ Sistemas completos (cadastro, notas fiscais, etc.)
+3️⃣ Cursos de Informática e Programação
+4️⃣ Segurança Cibernética para empresas
+5️⃣ Falar com um atendente humano
+6️⃣ Contratar nosso serviço de Chatbot 🤖
 
 Digite o número da opção desejada.
-  `;
+        `;
+        await msg.reply(menu);
+    }
 
-  await msg.reply(resposta);
+    // Tratamento de opções
+    switch (msg.body) {
+        case "1":
+            await msg.reply("🌐 Você escolheu *Criar site para minha empresa*. Nossa equipe irá ajudar você a ter presença digital com um site profissional.");
+            break;
+        case "2":
+            await msg.reply("📊 Você escolheu *Sistemas completos*. Trabalhamos com soluções sob medida para cadastro, emissão de notas fiscais e muito mais.");
+            break;
+        case "3":
+            await msg.reply("💻 Você escolheu *Cursos de Informática e Programação*. Temos formações para iniciantes e avançados.");
+            break;
+        case "4":
+            await msg.reply("🔐 Você escolheu *Segurança Cibernética*. Oferecemos soluções de proteção para empresas contra ameaças digitais.");
+            break;
+        case "5":
+            await msg.reply("📞 Você escolheu *Falar com um atendente humano*. Em breve alguém da nossa equipe entrará em contato.");
+            break;
+        case "6":
+            await msg.reply("🤖 Você escolheu *Contratar nosso serviço de Chatbot*. Nossa equipe vai te mostrar como automatizar seu atendimento de forma profissional.");
+            break;
+        default:
+            break;
+    }
 });
 
-// 🔹 Inicia o cliente
-client.initialize();
-
-// 🔹 Rota principal
+// Rotas Express
 app.get("/", (req, res) => {
-  res.send("🤖 WhatsApp Bot HL Solutions 360 rodando na nuvem!");
+    res.send("🤖 WhatsApp Bot HL Solutions 360 rodando na nuvem!");
 });
 
-// 🔹 Rota para exibir o QR Code
+// Rota para exibir QR Code
 app.get("/qr", (req, res) => {
-  if (!lastQr) {
-    return res.send("❌ Nenhum QR Code gerado ainda, aguarde alguns segundos...");
-  }
-  const html = `
+    if (!lastQr) {
+        return res.send("❌ Nenhum QR Code gerado ainda, aguarde alguns segundos...");
+    }
+    const html = `
     <html>
-      <body style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;">
-        <h2>📲 Escaneie o QR Code abaixo:</h2>
-        <img src="${lastQr}" />
-      </body>
+        <body style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column">
+            <h2>📲 Escaneie o QR Code abaixo:</h2>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?data=${lastQr}&size=300x300" />
+        </body>
     </html>
-  `;
-  res.send(html);
+    `;
+    res.send(html);
 });
 
-// 🔹 Servidor Express
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🌐 Servidor online na porta ${PORT}`);
+// Servidor Express
+app.listen(PORT, () => {
+    console.log(`🌍 Servidor online na porta ${PORT}`);
 });
+
+// Inicia o cliente WhatsApp
+client.initialize();
